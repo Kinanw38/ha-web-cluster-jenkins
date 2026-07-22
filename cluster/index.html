@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps HA Cluster Dashboard</title>
+    <!-- ייבוא ספריית אייקונים -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* משתני צבעים לעיצוב אחיד */
+        :root {
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --text: #f8fafc;
+            --primary: #38bdf8;
+            --success: #10b981;
+            --terminal-bg: #020617;
+            --terminal-text: #4ade80;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .dashboard {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 850px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* הכותרת הנדרשת לפי המשימה */
+        h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .status-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .status-box {
+            flex: 1;
+            min-width: 220px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.25rem 1rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .status-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .icon {
+            font-size: 2.2rem;
+            margin-bottom: 0.8rem;
+            color: var(--primary);
+        }
+
+        /* תיקון הגלישה של Active Node */
+        .active-node {
+            color: #f43f5e;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: monospace;
+            margin-top: 0.5rem;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+        }
+
+        /* אנימציה של דופק חי */
+        .pulse {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: var(--success);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulsing 2s infinite;
+        }
+
+        @keyframes pulsing {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* תרשים הארכיטקטורה */
+        .architecture-title {
+            text-align: center;
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .architecture {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 0 0 2.5rem 0;
+            color: #cbd5e1;
+        }
+
+        .arch-node {
+            background: rgba(51, 65, 85, 0.5);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #475569;
+            font-size: 0.9rem;
+        }
+
+        .arch-node i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .arch-arrow {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        /* עיצוב חלון הטרמינל */
+        .terminal {
+            background: var(--terminal-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--terminal-text);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            border: 1px solid #334155;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .terminal-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #eab308; }
+        .dot-green { background: #22c55e; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- כותרת ראשית -->
+        <div class="header">
+            <h1><i class="fa-solid fa-server"></i> Junior DevOps Engineer - Home Task</h1>
+            <div class="subtitle">High Availability Cluster | Orchestrated by <strong>Ron</strong></div>
+        </div>
+
+        <!-- קוביות מידע -->
+        <div class="status-container">
+            <div class="status-box">
+                <i class="fa-brands fa-docker icon"></i>
+                <h3>Environment</h3>
+                <p>Docker Containers</p>
+            </div>
+            <div class="status-box">
+                <i class="fa-solid fa-network-wired icon" style="color: var(--success);"></i>
+                <h3>Cluster State</h3>
+                <p><span class="pulse"></span> Online & Synced</p>
+            </div>
+            <div class="status-box" style="border-color: #f43f5e; background: rgba(244, 63, 94, 0.05);">
+                <i class="fa-solid fa-microchip icon" style="color: #f43f5e;"></i>
+                <h3>Active Node</h3>
+                <div class="active-node">HOSTNAME_PLACEHOLDER</div>
+            </div>
+        </div>
+
+        <!-- הצגה ויזואלית של הארכיטקטורה -->
+        <div class="architecture-title"><i class="fa-solid fa-sitemap"></i> Traffic Flow Architecture</div>
+        <div class="architecture">
+            <div class="arch-node">
+                <i class="fa-solid fa-laptop-code"></i><br>Jenkins Job
+            </div>
+            <div class="arch-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+            <div class="arch-node" style="border-color: var(--primary); color: var(--primary);">
+                <i class="fa-solid fa-location-dot"></i><br>Floating IP
+            </div>
+            <div class="arch-arrow"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+            <div class="arch-node" style="border-color: var(--success); color: var(--success);">
+                <i class="fa-brands fa-ubuntu"></i> <i class="fa-solid fa-feather"></i><br>Active Apache Server
+            </div>
+        </div>
+
+        <!-- חלון דמוי טרמינל המציג לוגים למראה מקצועי -->
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+            </div>
+            <div>[ OK ] Starting Corosync Cluster Engine...</div>
+            <div>[ OK ] Starting Pacemaker High Availability Cluster Manager...</div>
+            <div>[ INFO ] Floating IP resource successfully bound to network interface.</div>
+            <div>[ SUCCESS ] Apache2 is listening on Floating IP for incoming HTTP requests.</div>
+            <div>[ LIVE ] Node <span style="color: #f43f5e; font-weight: bold;">HOSTNAME_PLACEHOLDER</span> is currently handling traffic.</div>
+            <div style="color: #94a3b8; margin-top: 10px;">root@cluster:~# tail -f /var/log/apache2/access.log</div>
+        </div>
+    </div>
+</body>
+</html>

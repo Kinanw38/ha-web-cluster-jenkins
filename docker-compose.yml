@@ -1,0 +1,88 @@
+version: '3.8'
+
+# ==============================================================================
+# הגדרת הרשת הווירטואלית עבור הקלאסטר (Static Subnet)
+# ==============================================================================
+# אנחנו מגדירים רשת מותאמת אישית בטווח 172.20.0.0/16
+# כדי שנוכל להקצות כתובות IP קבועות וה-Floating IP (172.20.0.100) ישב באותה הרשת.
+networks:
+  cluster_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  # ----------------------------------------------------------------------------
+  # Node 1: webz-001
+  # ----------------------------------------------------------------------------
+  webz-001:
+    build: ./cluster
+    container_name: webz-001
+    hostname: webz-001
+    networks:
+      cluster_net:
+        ipv4_address: 172.20.0.11
+    # הרשאות מיוחדות לניהול כרטיסי רשת ויצירת ה-Floating IP
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN
+    ports:
+      - "8081:80" # גישה מהמחשב המארח בדפדפן בכתובת http://localhost:8081
+
+  # ----------------------------------------------------------------------------
+  # Node 2: webz-002
+  # ----------------------------------------------------------------------------
+  webz-002:
+    build: ./cluster
+    container_name: webz-002
+    hostname: webz-002
+    networks:
+      cluster_net:
+        ipv4_address: 172.20.0.12
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN
+    ports:
+      - "8082:80" # גישה מהמחשב המארח בדפדפן בכתובת http://localhost:8082
+
+  # ----------------------------------------------------------------------------
+  # Node 3: webz-003
+  # ----------------------------------------------------------------------------
+  webz-003:
+    build: ./cluster
+    container_name: webz-003
+    hostname: webz-003
+    networks:
+      cluster_net:
+        ipv4_address: 172.20.0.13
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_ADMIN
+    ports:
+      - "8083:80" # גישה מהמחשב המארח בדפדפן בכתובת http://localhost:8083
+
+  # ----------------------------------------------------------------------------
+  # Machine 4: webz-004 (Jenkins Monitoring Server)
+  # ----------------------------------------------------------------------------
+  webz-004:
+    build: ./jenkins
+    container_name: webz-004
+    hostname: webz-004
+    networks:
+      cluster_net:
+        ipv4_address: 172.20.0.14
+    ports:
+      - "8080:8080"  # ממשק ה-Web של Jenkins
+      - "50000:50000"
+    # חיבור תיקיית הלוגים לקונטיינר (Volume)
+    # כל לוג שייכתב בתוך הקונטיינר ב-/var/log/jenkins_monitor יישמר בתיקיית logs המקומית במחשב שלך!
+    volumes:
+      - ./logs:/var/log/jenkins_monitor
+    depends_on:
+      - webz-001
+      - webz-002
+      - webz-003
